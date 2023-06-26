@@ -1,5 +1,3 @@
-import { formatDistance, format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 import { TarefasState } from "../domain/reducers";
 import { IconButton, Typography } from "@mui/material";
@@ -12,18 +10,27 @@ interface Props {
   appState: TarefasState;
 }
 
+const formatarDataToBr = (date:Date) =>{
+  const data = new Date(date);
+
+  const dia = data.getDate();
+  const mes = data.getMonth() + 1;
+  const ano = data.getFullYear();
+
+  return `${dia}/${mes}/${ano}`;
+}
+
 export const TarefaPage = ({ appState }: Props) => {
   const params = useParams();
   const { id: taskId } = params;
 
   const tarefa = appState.tarefas.find((tarefa) => tarefa.id === taskId);
-
+   
   const navigate = useNavigate();
 
   if (!tarefa) {
     return <TarefaNotFound navigate={navigate} />;
   }
-
   return (
     <>
       <MyAppBar>
@@ -79,15 +86,11 @@ export const TarefaPage = ({ appState }: Props) => {
             </Typography>
             <Typography variant="body1">
               Data de Criação:
-              {format(tarefa.createdAt, " eeee, dd/MM/yyyy HH:mm", {
-                locale: ptBR,
-              })}
+              { formatarDataToBr(tarefa.createdAt)}
             </Typography>
             <Typography variant="body1">
-              {formatDistance(tarefa.createdAt, new Date(), {
-                addSuffix: true,
-                locale: ptBR,
-              })}
+              Data limite:
+            { tarefa.limiteDate && formatarDataToBr(tarefa.limiteDate)}
             </Typography>
           </section>
         </div>

@@ -1,45 +1,105 @@
 import { Actor, AllActions, Remove, Search, Toggle, Write, Add, TarefaActionsEnum, TarefasState } from "./types";
 
-export const makeInitialTarefaState = (): TarefasState => ({
-  tarefas: [],
-  error: "",
-  name: "",
-  search: "",
-});
+export const makeInitialTarefaState = (): TarefasState => {
+  const storedTarefas = localStorage.getItem("listTask");
+  const tarefas = storedTarefas ? JSON.parse(storedTarefas) : [];
 
-export const removeTask: Actor<Remove> = (state, action) => {
   return {
-    ...state,
-    tarefas: state.tarefas.filter((tarefa) => tarefa.id !== action.payload.id),
+    tarefas: tarefas,
+    error: "",
+    name: "",
+    search: "",
   };
 };
 
+export const saveStateToLocalStorage = (state: TarefasState) => {
+  localStorage.setItem("listTask", JSON.stringify(state.tarefas));
+};
+
+export const removeTaskLocalStorage = (taskId: string) => {
+  let data = localStorage.getItem("listTask");
+  let list: any[] = [];
+
+  if (data != null) {
+    list = JSON.parse(data);
+    list = list.filter((task) => task.id !== taskId);
+  }
+
+  localStorage.setItem("listTask", JSON.stringify(list));
+};
+
+
+
+export const removeTask: Actor<Remove> = (state, action) => {
+  const task = state.tarefas.filter((tarefa) => tarefa.id !== action.payload.id);
+  if (task.length >= 1) {
+    removeTaskLocalStorage(task[0].id);
+  }
+
+  const newState = {
+    ...state,
+    tarefas: task,
+  };
+
+  saveStateToLocalStorage(newState);
+
+  return newState;
+};
+export const addTaskLocalStorage = (newData: any) => {
+  let data = localStorage.getItem("listTask");
+  let list: any[] = [];
+
+  if (data != null) {
+    list = JSON.parse(data);
+  }
+
+  const isTaskAlreadyAdded = list.some((task) => task.id === newData.id);
+  if (isTaskAlreadyAdded) {
+    return;
+  }
+
+  list.push(newData);
+
+  localStorage.setItem("listTask", JSON.stringify(list));
+};
+
 export const toggleTask: Actor<Toggle> = (state, action) => {
-  return {
+  const newState = {
     ...state,
     tarefas: state.tarefas.map((t) =>
       t.id === action.payload.id ? { ...t, done: !t.done } : t
     ),
   };
+
+  saveStateToLocalStorage(newState);
+
+  return newState;
 };
 
 export const writeTask: Actor<Write> = (state, { payload }) => {
-
   const hasTaskAlready = state.tarefas.some((t) => t.name === payload.name);
 
   if (hasTaskAlready) {
-    return {
+    const newState = {
       ...state,
       name: payload.name,
       error: "Nome da tarefa já existe",
     };
+
+    saveStateToLocalStorage(newState);
+
+    return newState;
   }
 
-  return {
+  const newState = {
     ...state,
     error: "",
     name: payload.name,
   };
+
+  saveStateToLocalStorage(newState);
+
+  return newState;
 };
 
 export const addTask: Actor<Add> = (state) => {
@@ -49,36 +109,48 @@ export const addTask: Actor<Add> = (state) => {
       error: "Nome da tarefa não pode ser vazio",
     };
   }
-
   if (state.error) {
     return state;
   }
+  let limiteDate = new Date();
+  limiteDate.setDate(limiteDate.getDate() -1);
 
-  return {
+  const data = {
+    id: (state.tarefas.length + 1).toString(),
+    name: state.name,
+    done: false,
+    createdAt: new Date(),
+    limiteDate: limiteDate,
+  };
+
+  addTaskLocalStorage(data);
+
+  const newState = {
     ...state,
-    tarefas: [
-      ...state.tarefas,
-      {
-        id: (state.tarefas.length + 1).toString(),
-        name: state.name,
-        done: false,
-        createdAt: new Date(),
-      },
-    ],
+    tarefas: [...state.tarefas, data],
     error: "",
     name: "",
   };
+  
+
+  saveStateToLocalStorage(newState);
+
+  return newState;
 };
 
 export const searchTask: Actor<Search> = (state, action) => {
-  return {
+  const newState = {
     ...state,
     search: action.payload.search,
   };
+
+  saveStateToLocalStorage(newState);
+
+  return newState;
 };
 
 export const tarefaReducer = (
-  state: TarefasState,
+  state: TarefasState = makeInitialTarefaState(),
   action: AllActions
 ): TarefasState => {
   switch (action.type) {

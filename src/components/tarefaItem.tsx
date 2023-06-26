@@ -8,6 +8,9 @@ interface Props {
   goToTarefa: (id: string) => void;
 }
 
+
+
+
 export const TarefaItem = ({
   tarefa,
   onDelete,
@@ -15,7 +18,7 @@ export const TarefaItem = ({
   goToTarefa,
 }: Props) => {
   const opacity = tarefa.done ? 0.5 : 1;
-
+  const taskIsLate = (new Date() > new Date(tarefa.limiteDate) && !tarefa.done);
   return (
     <Paper
       style={{
@@ -26,6 +29,7 @@ export const TarefaItem = ({
         justifyContent: "space-between",
         alignItems: "center",
         opacity,
+        border: taskIsLate ? "1px solid red" : "1px solid transparent",
       }}
       elevation={1}
     >
